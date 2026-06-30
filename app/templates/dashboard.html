@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – AttendEase{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <h1>Attendance Dashboard</h1>
+
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <form method="GET" action="/dashboard" class="date-filter" style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+        <label for="dateInput">Date:</label>
+        <input type="date" id="dateInput" name="date" value="{{ selected_date }}" />
+        <button type="submit" class="btn-secondary">View</button>
+      </form>
+
+      <a href="/api/attendance/export?date={{ selected_date }}" style="display: inline-flex; align-items: center; padding: 0.5rem 1.2rem; background: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.9rem; border: none; cursor: pointer; transition: background 0.2s;">
+        📥 Export CSV
+      </a>
+    </div>
+  </div>
+
+  <div class="table-card" style="text-align: center; padding: 2rem; border: 2px solid #007bff; background: #fdfdfd; margin-bottom: 2rem;">
+    <h2 style="margin-top: 0; color: #333;">Projector Attendance Gate</h2>
+    <p style="color: #6c757d; margin-bottom: 1.5rem;">Have students scan this code with their phones to mark themselves present.</p>
+    
+    <div id="qrcode" style="display: inline-block; padding: 1.2rem; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);"></div>
+    
+    <p style="margin-top: 1.2rem; font-weight: bold; color: #495057;">
+      🔄 Security token refreshes in: <span id="countdown" style="color: #007bff; font-size: 1.2rem;">30</span>s
+    </p>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-number">{{ present_count }}</span>
+      <span class="stat-label">Present Today</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">{{ total_students }}</span>
+      <span class="stat-label">Total Students</span>
+    </div>
+    <div class="stat-card">
+      {% if total_students > 0 %}
+        <span class="stat-number">{{ ((present_count / total_students) * 100) | round(1) }}%</span>
+      {% else %}
+        <span class="stat-number">—</span>
+      {% endif %}
+      <span class="stat-label">Attendance Rate</span>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <h2>Records for {{ selected_date }}</h2>
+    {% if records %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Student ID</th>
+          <th>Name</th>
+          <th>Class</th>
+          <th>Device ID</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><code>{{ r.student_id }}</code></td>
+          <td>{{ r.student_name }}</td>
+          <td>{{ r.class_name or '—' }}</td>
+          <td><code class="device-id">{{ r.device_id[:8] }}…</code></td>
+          <td>{{ r.timestamp }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No attendance records for this date.</p>
+    {% endif %}
+  </div>
+
+  {% if summary %}
+  <div class="table-card">
+    <h2>Recent Daily Counts</h2>
+    <table class="data-table">
+      <thead>
+        <tr><th>Date</th><th>Students Present</th></tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+        <tr>
+          <td>{{ row.date }}</td>
+          <td>{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const baseServerUrl = window.location.origin; 
+    const qrElement = document.getElementById("qrcode");
+    const countdownElement = document.getElementById("countdown");
+    
+    let qrController = new QRCode(qrElement, {
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    let timeLeft = 30;
+
+    function updateLiveQRCode() {
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const targetStudentUrl = `${baseServerUrl}/?token=${currentTimestamp}`;
+        
+        qrController.clear();
+        qrController.makeCode(targetStudentUrl);
+        console.log("Token rotation fired:", targetStudentUrl);
+    }
+
+    updateLiveQRCode();
+
+    setInterval(() => {
+        timeLeft--;
+        countdownElement.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+            updateLiveQRCode();
+            timeLeft = 30;
+        }
+    }, 1000);
+});
+</script>
+{% endblock %}

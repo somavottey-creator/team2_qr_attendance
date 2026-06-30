@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance – AttendEase{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto; padding: 2rem;">
+  
+  {% if error_message %}
+    <div style="text-align: center; padding: 1rem;">
+      <span style="font-size: 3rem;">⚠️</span>
+      <h2 style="color: #dc3545; margin-top: 1rem;">Access Denied</h2>
+      <p style="color: #6c757d; margin-bottom: 1.5rem;">{{ error_message }}</p>
+      <button onclick="window.location.reload();" class="btn-primary" style="background: #007bff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: bold;">🔄 Try Rescanning</button>
+    </div>
+
+  {% elif already_scanned %}
+    <div style="text-align: center; padding: 1rem;">
+      <span style="font-size: 3rem;">✅</span>
+      <h2 style="color: #28a745; margin-top: 1rem;">Already Logged</h2>
+      <p style="color: #6c757d;">Your attendance has already been recorded for today. You're good to go!</p>
+    </div>
+
+  {% else %}
+    <h2 style="margin-bottom: 0.5rem; color: #212529;">Mark Attendance</h2>
+    <p style="color: #6c757d; margin-bottom: 2rem;">{{ today }}</p>
+
+    <form action="/mark" method="POST" id="attendanceForm">
+      <input type="hidden" name="qr_token" id="qrTokenField">
+
+      <div style="position: relative; margin-bottom: 1.5rem;">
+        <label for="studentName" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Full Name:</label>
+        <input type="text" id="studentName" name="student_name" autocomplete="off" placeholder="e.g. Sophea Chan" style="width: 100%; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 4px;" required>
+        <div id="nameSuggestions" style="position: absolute; width: 100%; background: white; border: 1px solid #ced4da; border-top: none; z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></div>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label for="studentId" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Student ID:</label>
+        <input type="text" id="studentId" name="student_id" placeholder="Scan or type your ID" style="width: 100%; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 4px;" required>
+        <small id="idHint" style="display: block; color: #6c757d; margin-top: 0.25rem; font-style: italic;"></small>
+      </div>
+      
+      <button type="submit" id="submitBtn" class="btn-primary" style="width: 100%; background: #007bff; color: white; border: none; padding: 0.75rem; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1rem;">
+        ✅ Mark Present
+      </button>
+    </form>
+
+    <script>
+      // Instantly inject the URL security token string parameters directly into our HTML input value context
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+      if (token) {
+          document.getElementById("qrTokenField").value = token;
+      }
+    </script>
+  {% endif %}
+
+</div>
+{% endblock %}

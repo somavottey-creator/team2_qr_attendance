@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} – History{% endblock %}
+
+{% block content %}
+<section class="students-section">
+  <a href="/students" class="btn-link">← Back to Students</a>
+  <h1>{{ student.name }}</h1>
+  <p class="subheading">ID: <code>{{ student.id }}</code> &nbsp;|&nbsp; Class: {{ student.class_name or '—' }}</p>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-number">{{ history | length }}</span>
+      <span class="stat-label">Days Present</span>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <h2>Attendance History</h2>
+    {% if history %}
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Timestamp</th><th>Device</th></tr>
+      </thead>
+      <tbody>
+        {% for h in history %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ h.date }}</td>
+          <td>{{ h.timestamp }}</td>
+          <td><code class="device-id">{{ h.device_id[:8] }}…</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No attendance records yet.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Students – AttendEase{% endblock %}
+
+{% block content %}
+<section class="students-section">
+  <h1>Student Registry</h1>
+
+  <!-- Add student form -->
+  <div class="card">
+    <h2>Add New Student</h2>
+    <form method="POST" action="/students/add" class="add-student-form">
+      <div class="form-row">
+        <div class="field-group">
+          <label for="student_id">Student ID</label>
+          <input type="text" id="student_id" name="student_id" placeholder="e.g. STU2024001" required />
+        </div>
+        <div class="field-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="e.g. Sophea Chan" required />
+        </div>
+        <div class="field-group">
+          <label for="class_name">Class (optional)</label>
+          <input type="text" id="class_name" name="class_name" placeholder="e.g. Grade 10A" />
+        </div>
+        <button type="submit" class="btn-primary">Add Student</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Student list -->
+  <div class="table-card">
+    <h2>All Students ({{ students | length }})</h2>
+    {% if students %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Student ID</th>
+          <th>Name</th>
+          <th>Class</th>
+          <th>Registered</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><code>{{ s.id }}</code></td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.class_name or '—' }}</td>
+          <td>{{ s.created_at }}</td>
+          <td class="actions">
+            <a href="/students/{{ s.id }}/history" class="btn-link">History</a>
+            <form method="POST" action="/students/delete/{{ s.id }}"
+                  onsubmit="return confirm('Remove {{ s.name }}?');"
+                  style="display:inline">
+              <button type="submit" class="btn-danger-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No students registered yet. Add one above.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

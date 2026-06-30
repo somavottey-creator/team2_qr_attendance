@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}AttendEase{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <a class="nav-brand" href="/">📋 AttendEase</a>
+    <div class="nav-links">
+      {% if session.get('logged_in') %}
+        <a href="/dashboard" class="{% if request.path.startswith('/dashboard') %}active{% endif %}">Dashboard</a>
+        <a href="/students" class="{% if request.path.startswith('/students') %}active{% endif %}">Students</a>
+        <a href="/logout" style="color: #dc3545; margin-left: 1rem;">Logout</a>
+      {% else %}
+        <span style="color: #6c757d; font-size: 0.95rem; font-weight: 500;">Student Portal</span>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main class="main-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    {% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>AttendEase &mdash; Digital Attendance System</p>
+  </footer>
+</body>
+</html>
