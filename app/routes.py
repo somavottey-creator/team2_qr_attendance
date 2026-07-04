@@ -1,5 +1,6 @@
 import csv
 import io
+import os #add to the original code to test with other wifi address 
 import sqlite3
 from datetime import datetime
 from flask import render_template, request, jsonify, session, redirect, send_file
@@ -7,7 +8,8 @@ from app.device import get_device_id, set_device_cookie
 from app.database import (
     has_device_scanned_today,
     record_attendance,
-    search_students_by_name
+    search_students_by_name,
+    get_attendance_by_date
 )
 
 # ─── CONFIGURATION ───
@@ -62,7 +64,7 @@ def register_routes(app):
         print(f"Device IP Detected: {student_ip}")
         
         # Wi-Fi Subnet Boundary Verification
-        SCHOOL_NETWORK_PREFIX = "172.16." 
+        SCHOOL_NETWORK_PREFIX = os.environ.get("SCHOOL_NETWORK_PREFIX", "172.16.")
         if student_ip != "127.0.0.1" and not student_ip.startswith(SCHOOL_NETWORK_PREFIX):
             print(f"❌ SECURITY REJECTION: IP {student_ip} is not on the school subnet.")
             return render_template("index.html", today=today_str, already_scanned=False, error_message=f"Access Denied: Your device IP ({student_ip}) is not on the School Wi-Fi network.")
@@ -120,7 +122,7 @@ def register_routes(app):
         query = request.args.get('q', '')
         if len(query) < 2:
             return jsonify([])
-        results = search_students_by_name(query)
+        results = search_students_by_name(query) #add on
         return jsonify(results)
 
 
@@ -138,7 +140,7 @@ def register_routes(app):
             cursor = conn.cursor()
             
             cursor.execute("SELECT * FROM attendance WHERE date(timestamp) = ? ORDER BY timestamp DESC", (selected_date,))
-            records = [dict(row) for row in cursor.fetchall()]
+            records = get_attendance_by_date(selected_date)
             
             cursor.execute("SELECT COUNT(DISTINCT student_id) FROM attendance WHERE date(timestamp) = ?", (selected_date,))
             present_count = cursor.fetchone()[0] or 0

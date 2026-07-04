@@ -1,3 +1,4 @@
+<!-- MARKER 12345 -->
 {% extends "base.html" %}
 {% block title %}Mark Attendance – AttendEase{% endblock %}
 
@@ -34,7 +35,7 @@
 
       <div style="margin-bottom: 1.5rem;">
         <label for="studentId" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Student ID:</label>
-        <input type="text" id="studentId" name="student_id" placeholder="Scan or type your ID" style="width: 100%; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 4px;" required>
+        <input type="text" id="studentId" name="student_id" autocomplete="off" placeholder="Scan or type your ID" style="width: 100%; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 4px;" required>
         <small id="idHint" style="display: block; color: #6c757d; margin-top: 0.25rem; font-style: italic;"></small>
       </div>
       
@@ -51,6 +52,8 @@
           document.getElementById("qrTokenField").value = token;
       }
     </script>
+
+    <script src="{{ url_for('static', filename='scan.js') }}"></script>
   {% endif %}
 
 </div>
