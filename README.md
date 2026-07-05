@@ -36,9 +36,9 @@ python main.py
 Open **http://localhost:5000** in a browser.
 
 ## Project Structure
-
-```
 Our System Analysis: https://docs.google.com/document/d/15RA8Hdh62hxgRYWkEakZYfLSgJT22zyBHd9w5Av_mi8/edit?usp=sharing
+```
+
 attendance_system/
 ├── main.py                  # Entry point
 ├── requirements.txt
