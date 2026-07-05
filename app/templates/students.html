@@ -1,10 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Students – AttendEase{% endblock %}
-
 {% block content %}
 <section class="students-section">
   <h1>Student Registry</h1>
-
   <!-- Add student form -->
   <div class="card">
     <h2>Add New Student</h2>
@@ -26,7 +24,6 @@
       </div>
     </form>
   </div>
-
   <!-- Student list -->
   <div class="table-card">
     <h2>All Students ({{ students | length }})</h2>
@@ -43,17 +40,17 @@
         </tr>
       </thead>
       <tbody>
-        {% for s in students %}
+        {% for student in students %}
         <tr>
           <td>{{ loop.index }}</td>
-          <td><code>{{ s.id }}</code></td>
-          <td>{{ s.name }}</td>
-          <td>{{ s.class_name or '—' }}</td>
-          <td>{{ s.created_at }}</td>
+          <td><code>{{ student.id }}</code></td>
+          <td>{{ student.name }}</td>
+          <td>{{ student.class_name or '—' }}</td>
+          <td>{{ student.created_at }}</td>
           <td class="actions">
-            <a href="/students/{{ s.id }}/history" class="btn-link">History</a>
-            <form method="POST" action="/students/delete/{{ s.id }}"
-                  onsubmit="return confirm('Remove {{ s.name }}?');"
+            <a href="/students/{{ student.id }}/history" class="btn-link">History</a>
+            <form method="POST" action="/students/delete/{{ student.id }}"
+                  onsubmit="return confirm('Remove {{ student.name }}?');"
                   style="display:inline">
               <button type="submit" class="btn-danger-sm">Remove</button>
             </form>
