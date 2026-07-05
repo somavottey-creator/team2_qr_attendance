@@ -1,6 +1,6 @@
 Click To View The Detail in Our Project Documentation: https://docs.google.com/document/d/1yb5Es6xBD9E0Jpe98mpc1ZfI7a8L1JMK0IEAAxYpvBo/edit?usp=sharing
 
-# JolRean – Digital Attendance System
+# Smart QR Code – Digital Attendance System
 
 A lightweight Flask web app that replaces manual roll-call with a fast scan-and-type workflow.
 
