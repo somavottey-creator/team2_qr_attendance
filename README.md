@@ -9,7 +9,7 @@ A lightweight Flask web app that replaces manual roll-call with a fast scan-and-
 | Feature | Detail |
 |---|---|
 | **Name autocomplete** | Type a few letters → matching student names appear; selecting one auto-fills the ID field |
-| **ID auto-fillin** | After a student is registered once, their ID is remembered and auto filling in |
+| **ID auto-fill** | Student IDs are pre-loaded from the database — typing a name instantly matches and fills in the corresponding ID |
 | **One-scan-per-device** | A browser cookie locks a device after a successful submission; a second scan that day is blocked |
 | **Auto-registration** | First-time scan auto-creates the student record so no pre-setup is needed |
 | **Dashboard** | View attendance by date, see daily counts, and track attendance rates |
