@@ -16,7 +16,7 @@ Click To View The Detail in Our Project Documentation: https://docs.google.com/d
 | **Student registry** | Add / remove students and browse per-student attendance history |
 | **SQLite backend** | Zero-config — all data lives in `attendance.db` in the project root |
 
-## Quick Start
+## Quick Start - How to Run the Program
 
 ```bash
 # 1. Clone / download the project
