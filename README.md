@@ -1,8 +1,8 @@
-Click To View The Detail in Our Project Documentation: https://docs.google.com/document/d/1yb5Es6xBD9E0Jpe98mpc1ZfI7a8L1JMK0IEAAxYpvBo/edit?usp=sharing
 
 # Smart QR Code Attendance Tracking System – Digital Attendance System
 
 A lightweight Flask web app that replaces manual roll-call with a fast scan-and-type workflow.
+Click To View The Detail in Our Project Documentation: https://docs.google.com/document/d/1yb5Es6xBD9E0Jpe98mpc1ZfI7a8L1JMK0IEAAxYpvBo/edit?usp=sharing
 
 ## Features
 
