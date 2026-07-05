@@ -62,16 +62,18 @@ attendance_system/
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/` | Scan / mark attendance page |
-| `POST` | `/mark` | Submit attendance (JSON body: `student_id`, `student_name`) |
-| `GET` | `/api/autocomplete?q=` | Search students by name |
-| `GET` | `/api/student/<id>` | Get student details by ID |
+| `GET` | `/` | Student attendance form (requires valid `?token=` from QR code) |
+| `POST` | `/mark` | Submit attendance (form fields: `student_id`, `student_name`) |
+| `GET` | `/login` | Teacher portal login page |
+| `POST` | `/login` | Submit teacher password |
+| `GET` | `/logout` | End teacher session |
 | `GET` | `/dashboard` | Attendance dashboard (optional `?date=YYYY-MM-DD`) |
-| `GET` | `/students` | Student registry |
-| `POST` | `/students/add` | Add a new student |
-| `POST` | `/students/delete/<id>` | Remove a student |
+| `GET` | `/students` | Student registry list |
+| `POST` | `/students/add` | Add a new student (form fields: `student_id`, `name`, `class_name`) |
 | `GET` | `/students/<id>/history` | Per-student attendance history |
-| `GET` | `/api/attendance?date=` | Attendance records as JSON |
+| `POST` | `/students/delete/<id>` | Remove a student and all their records |
+| `GET` | `/api/autocomplete?q=` | Search students by name (min 2 characters) |
+| `GET` | `/api/attendance/export` | Export attendance as CSV (optional `?date=YYYY-MM-DD`) |
 
 ## Deployment Notes
 
