@@ -1,6 +1,6 @@
 import csv
 import io
-import os #add to the original code to test with other wifi address 
+import os
 import sqlite3
 from datetime import datetime
 from flask import render_template, request, jsonify, session, redirect, send_file
@@ -33,14 +33,13 @@ def register_routes(app):
         if has_device_scanned_today(device_id):
             return render_template("index.html", today=today_str, already_scanned=True, error_message=None)
 
-
         # ─── STEP 2: TOKEN PARAMETER SECURITY VALIDATIONS ───
         # Guard 1: Verify token param exists from the projector's QR code
         token = request.args.get('token')
         if not token:
             return render_template("index.html", today=today_str, already_scanned=False, error_message="Missing or invalid link. Please scan the live QR code from the classroom projector.")
             
-        # Guard 2: Verify sliding security window (Increased to 60s for easier scanning entry)
+        # Guard 2: Verify sliding security window
         try:
             token_time = int(token)
             current_time = int(datetime.now().timestamp())
@@ -49,12 +48,11 @@ def register_routes(app):
         except ValueError:
             return render_template("index.html", today=today_str, already_scanned=False, error_message="Malformed security tracking token.")
 
-
         # ─── STEP 3: RENDER THE FRESH BLANK INPUT FORM ───
         return render_template("index.html", today=today_str, already_scanned=False, error_message=None)
 
 
-    # 2. STUDENT ATTENDANCE SUBMISSION PIPELINE (NATIVE FORM ENGINE POST HANDLER)
+    # 2. STUDENT ATTENDANCE SUBMISSION PIPELINE
     @app.route('/mark', methods=['POST'])
     def mark_attendance():
         student_ip = request.remote_addr
@@ -71,7 +69,6 @@ def register_routes(app):
             
         print("✅ NETWORK PASS: Device verified inside local Wi-Fi parameter pool.")
 
-        # ─── FIX: READ VIA NATIVE POST FORM STRINGS INSTEAD OF JSON ───
         student_id = request.form.get('student_id')
         student_name = request.form.get('student_name')
         
@@ -81,13 +78,12 @@ def register_routes(app):
             
         device_id = get_device_id()
         
-        # Write structural details directly down to your SQLite database file
         result = record_attendance(student_id, student_name, device_id)
         success = result["success"]
         msg = result["message"]
+
         if success:
             print(f"💾 DATABASE SUCCESS: Marked {student_name} ({student_id}) Present.")
-            # Clear params natively by redirecting to root where Step 1 cookie check will safely lock the screen
             response = redirect('/')
             return set_device_cookie(response, device_id)
         else:
@@ -122,7 +118,7 @@ def register_routes(app):
         query = request.args.get('q', '')
         if len(query) < 2:
             return jsonify([])
-        results = search_students_by_name(query) #add on
+        results = search_students_by_name(query)
         return jsonify(results)
 
 
@@ -139,7 +135,6 @@ def register_routes(app):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            cursor.execute("SELECT * FROM attendance WHERE date(timestamp) = ? ORDER BY timestamp DESC", (selected_date,))
             records = get_attendance_by_date(selected_date)
             
             cursor.execute("SELECT COUNT(DISTINCT student_id) FROM attendance WHERE date(timestamp) = ?", (selected_date,))
@@ -184,12 +179,12 @@ def register_routes(app):
             if student_id and student_name:
                 try:
                     cursor.execute(
-                        "INSERT INTO students (student_id, name, class_name) VALUES (?, ?, ?)",
+                        "INSERT INTO students (id, name, class_name) VALUES (?, ?, ?)",
                         (student_id, student_name, class_name)
                     )
                     conn.commit()
                 except sqlite3.IntegrityError:
-                    pass 
+                    pass
 
         cursor.execute("SELECT * FROM students ORDER BY name ASC")
         all_students = [dict(row) for row in cursor.fetchall()]
@@ -198,7 +193,55 @@ def register_routes(app):
         return render_template("students.html", students=all_students)
 
 
-    # 8. TEACHER PORTAL: EXPORT ATTENDANCE TO CSV
+    # 8. STUDENT ATTENDANCE HISTORY (PER-STUDENT VIEW)
+    @app.route('/students/<student_id>')
+    def student_history(student_id):
+        if not session.get('logged_in'):
+            return redirect('/login')
+
+        conn = sqlite3.connect("attendance.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+        student = cursor.fetchone()
+
+        if not student:
+            conn.close()
+            return redirect('/students')
+
+        cursor.execute(
+            "SELECT * FROM attendance WHERE student_id = ? ORDER BY date DESC",
+            (student_id,)
+        )
+        history = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        return render_template("student_history.html", student=dict(student), history=history)
+
+
+    # 9. DELETE STUDENT (TEACHER-ONLY)
+    @app.route('/students/<student_id>/delete', methods=['POST'])
+    def delete_student(student_id):
+        if not session.get('logged_in'):
+            return redirect('/login')
+
+        conn = sqlite3.connect("attendance.db")
+        try:
+            conn.execute("DELETE FROM attendance WHERE student_id = ?", (student_id,))
+            conn.execute("DELETE FROM device_scans WHERE student_id = ?", (student_id,))
+            conn.execute("DELETE FROM students WHERE id = ?", (student_id,))
+            conn.commit()
+            print(f"🗑️ DELETED: Student {student_id} and all related records removed.")
+        except Exception as e:
+            print(f"❌ DELETE FAILURE: {e}")
+        finally:
+            conn.close()
+
+        return redirect('/students')
+
+
+    # 10. TEACHER PORTAL: EXPORT ATTENDANCE TO CSV
     @app.route('/api/attendance/export')
     def export_csv():
         if not session.get('logged_in'):
