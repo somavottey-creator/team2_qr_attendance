@@ -18,7 +18,7 @@ TEACHER_PASSWORD = "admin"  # Set your desired teacher portal password here
 
 def register_routes(app):
     """Registers endpoints separating the Student Input Portal from the Teacher Admin Center."""
-    
+
     if not app.secret_key:
         app.secret_key = "super_secret_attendance_gate_key"
 
@@ -27,19 +27,17 @@ def register_routes(app):
     @app.route('/')
     def index():
         today_str = datetime.now().strftime("%B %d, %Y")
-        
-        # ─── FIX: STEP 1: DEVICE DUPLICATION CHECK RUNS FIRST ───
+
+        # STEP 1: DEVICE DUPLICATION CHECK RUNS FIRST
         device_id = get_device_id()
         if has_device_scanned_today(device_id):
             return render_template("index.html", today=today_str, already_scanned=True, error_message=None)
 
-        # ─── STEP 2: TOKEN PARAMETER SECURITY VALIDATIONS ───
-        # Guard 1: Verify token param exists from the projector's QR code
+        # STEP 2: TOKEN PARAMETER SECURITY VALIDATIONS
         token = request.args.get('token')
         if not token:
             return render_template("index.html", today=today_str, already_scanned=False, error_message="Missing or invalid link. Please scan the live QR code from the classroom projector.")
-            
-        # Guard 2: Verify sliding security window
+
         try:
             token_time = int(token)
             current_time = int(datetime.now().timestamp())
@@ -48,7 +46,7 @@ def register_routes(app):
         except ValueError:
             return render_template("index.html", today=today_str, already_scanned=False, error_message="Malformed security tracking token.")
 
-        # ─── STEP 3: RENDER THE FRESH BLANK INPUT FORM ───
+        # STEP 3: RENDER THE FRESH BLANK INPUT FORM
         return render_template("index.html", today=today_str, already_scanned=False, error_message=None)
 
 
@@ -57,27 +55,27 @@ def register_routes(app):
     def mark_attendance():
         student_ip = request.remote_addr
         today_str = datetime.now().strftime("%B %d, %Y")
-        
+
         print("\n=== [ATTENDANCE INCOMING REQUEST] ===")
         print(f"Device IP Detected: {student_ip}")
-        
+
         # Wi-Fi Subnet Boundary Verification
         SCHOOL_NETWORK_PREFIX = os.environ.get("SCHOOL_NETWORK_PREFIX", "172.16.")
         if student_ip != "127.0.0.1" and not student_ip.startswith(SCHOOL_NETWORK_PREFIX):
             print(f"❌ SECURITY REJECTION: IP {student_ip} is not on the school subnet.")
             return render_template("index.html", today=today_str, already_scanned=False, error_message=f"Access Denied: Your device IP ({student_ip}) is not on the School Wi-Fi network.")
-            
+
         print("✅ NETWORK PASS: Device verified inside local Wi-Fi parameter pool.")
 
         student_id = request.form.get('student_id')
         student_name = request.form.get('student_name')
-        
+
         if not student_id or not student_name:
             print("❌ SUBMISSION REJECTION: Missing Form Parameters.")
             return render_template("index.html", today=today_str, already_scanned=False, error_message="Missing input criteria parameters.")
-            
+
         device_id = get_device_id()
-        
+
         result = record_attendance(student_id, student_name, device_id)
         success = result["success"]
         msg = result["message"]
@@ -110,7 +108,7 @@ def register_routes(app):
     def logout():
         session.pop('logged_in', None)
         return redirect('/login')
-    
+
 
     # 5. AUTOCOMPLETE ENGINE API (STUDENT-SIDE SUGGESTIONS)
     @app.route('/api/autocomplete', methods=['GET'])
@@ -122,30 +120,30 @@ def register_routes(app):
         return jsonify(results)
 
 
-    # 6. TEACHER-ONLY DASHBOARD (QR CODE ENGINE & STATISTICS)
+    # 6. TEACHER-ONLY DASHBOARD
     @app.route('/dashboard')
     def dashboard():
         if not session.get('logged_in'):
             return redirect('/login')
 
         selected_date = request.args.get('date', datetime.now().strftime("%Y-%m-%d"))
-        
+
         try:
             conn = sqlite3.connect("attendance.db")
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            
+
             records = get_attendance_by_date(selected_date)
-            
+
             cursor.execute("SELECT COUNT(DISTINCT student_id) FROM attendance WHERE date(timestamp) = ?", (selected_date,))
             present_count = cursor.fetchone()[0] or 0
-            
+
             cursor.execute("SELECT COUNT(*) FROM students")
             total_students = cursor.fetchone()[0] or 0
-            
+
             cursor.execute("SELECT date(timestamp) as date_str, COUNT(DISTINCT student_id) as day_count FROM attendance GROUP BY date_str ORDER BY date_str DESC LIMIT 30")
             summary = [{"date": row["date_str"], "count": row["day_count"]} for row in cursor.fetchall()]
-            
+
             conn.close()
         except Exception as e:
             print("Dashboard data fetch error:", e)
@@ -161,31 +159,15 @@ def register_routes(app):
         )
 
 
-    # 7. TEACHER-ONLY MASTER STUDENT ROSTER MANAGEMENT
-    @app.route('/students', methods=['GET', 'POST'])
+    # 7. TEACHER-ONLY MASTER STUDENT ROSTER
+    @app.route('/students', methods=['GET'])
     def students():
         if not session.get('logged_in'):
             return redirect('/login')
-            
+
         conn = sqlite3.connect("attendance.db")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-
-        if request.method == 'POST':
-            student_id = request.form.get('student_id', '').strip()
-            student_name = request.form.get('student_name', '').strip()
-            class_name = request.form.get('class_name', '').strip()
-
-            if student_id and student_name:
-                try:
-                    cursor.execute(
-                        "INSERT INTO students (id, name, class_name) VALUES (?, ?, ?)",
-                        (student_id, student_name, class_name)
-                    )
-                    conn.commit()
-                except sqlite3.IntegrityError:
-                    pass
-
         cursor.execute("SELECT * FROM students ORDER BY name ASC")
         all_students = [dict(row) for row in cursor.fetchall()]
         conn.close()
@@ -193,8 +175,34 @@ def register_routes(app):
         return render_template("students.html", students=all_students)
 
 
-    # 8. STUDENT ATTENDANCE HISTORY (PER-STUDENT VIEW)
-    @app.route('/students/<student_id>')
+    # 8. ADD NEW STUDENT
+    @app.route('/students/add', methods=['POST'])
+    def add_student():
+        if not session.get('logged_in'):
+            return redirect('/login')
+
+        student_id = request.form.get('student_id', '').strip()
+        student_name = request.form.get('name', '').strip()
+        class_name = request.form.get('class_name', '').strip()
+
+        if student_id and student_name:
+            conn = sqlite3.connect("attendance.db")
+            try:
+                conn.execute(
+                    "INSERT INTO students (id, name, class_name) VALUES (?, ?, ?)",
+                    (student_id, student_name, class_name)
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                pass
+            finally:
+                conn.close()
+
+        return redirect('/students')
+
+
+    # 9. STUDENT ATTENDANCE HISTORY (PER-STUDENT VIEW)
+    @app.route('/students/<student_id>/history')
     def student_history(student_id):
         if not session.get('logged_in'):
             return redirect('/login')
@@ -220,8 +228,8 @@ def register_routes(app):
         return render_template("student_history.html", student=dict(student), history=history)
 
 
-    # 9. DELETE STUDENT (TEACHER-ONLY)
-    @app.route('/students/<student_id>/delete', methods=['POST'])
+    # 10. DELETE STUDENT (TEACHER-ONLY)
+    @app.route('/students/delete/<student_id>', methods=['POST'])
     def delete_student(student_id):
         if not session.get('logged_in'):
             return redirect('/login')
@@ -241,32 +249,32 @@ def register_routes(app):
         return redirect('/students')
 
 
-    # 10. TEACHER PORTAL: EXPORT ATTENDANCE TO CSV
+    # 11. TEACHER PORTAL: EXPORT ATTENDANCE TO CSV
     @app.route('/api/attendance/export')
     def export_csv():
         if not session.get('logged_in'):
             return redirect('/login')
 
         day = request.args.get("date", datetime.now().strftime("%Y-%m-%d"))
-        
+
         try:
             conn = sqlite3.connect("attendance.db")
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            
+
             cursor.execute("""
-                SELECT 
-                    student_name AS name, 
-                    student_id AS id, 
-                    'Present' AS status, 
-                    time(timestamp) AS time, 
-                    date(timestamp) AS date, 
-                    device_id 
-                FROM attendance 
-                WHERE date(timestamp) = ? 
+                SELECT
+                    student_name AS name,
+                    student_id AS id,
+                    'Present' AS status,
+                    time(timestamp) AS time,
+                    date(timestamp) AS date,
+                    device_id
+                FROM attendance
+                WHERE date(timestamp) = ?
                 ORDER BY timestamp DESC
             """, (day,))
-            
+
             records = [dict(row) for row in cursor.fetchall()]
             conn.close()
         except Exception as e:
@@ -282,7 +290,7 @@ def register_routes(app):
         writer.writeheader()
         writer.writerows(records)
         output.seek(0)
-    
+
         return send_file(
             io.BytesIO(output.getvalue().encode('utf-8')),
             mimetype="text/csv",
