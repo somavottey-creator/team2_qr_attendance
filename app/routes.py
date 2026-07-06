@@ -41,7 +41,7 @@ def register_routes(app):
         try:
             token_time = int(token)
             current_time = int(datetime.now().timestamp())
-            if current_time - token_time > 20:
+            if current_time - token_time > 30:
                 return render_template("index.html", today=today_str, already_scanned=False, error_message="QR Code expired. Please wait for the teacher's screen to cycle a fresh link and rescan.")
         except ValueError:
             return render_template("index.html", today=today_str, already_scanned=False, error_message="Malformed security tracking token.")
